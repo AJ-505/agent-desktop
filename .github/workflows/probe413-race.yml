@@ -1,0 +1,24 @@
+name: probe413-race
+on:
+  push:
+    branches: [probe/413]
+    paths: ['.github/workflows/probe413-race.yml', 'probe413/race.sh']
+permissions:
+  contents: read
+jobs:
+  race:
+    runs-on: macos-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Race probe
+        run: |
+          cd probe413
+          swiftc -O observer.swift -o observer
+          swiftc -O poster.swift -o poster
+          ./race.sh "$GITHUB_WORKSPACE/out"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: race413
+          path: out
