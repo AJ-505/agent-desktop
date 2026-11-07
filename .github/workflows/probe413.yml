@@ -52,3 +52,21 @@ jobs:
         with:
           name: e2e413
           path: out
+  perf:
+    runs-on: macos-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: AJ-505/agent-desktop
+          ref: fix/413-sided-modifiers
+          fetch-depth: 0
+      - name: Perf baseline compare
+        run: |
+          git log --oneline -2
+          bash scripts/perf-baseline-compare.sh --base b43ac4f6e892ef608f8851428613c4009f0e84c7 --rounds 5 --out "$GITHUB_WORKSPACE/perf"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: perf413
+          path: perf/*.html

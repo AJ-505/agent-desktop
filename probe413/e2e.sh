@@ -69,6 +69,26 @@ soak 29-soak-lcmd+rcmd+a press lcmd+rcmd+a
 soak 30-soak-batch-lopt+ropt batch '[{"command":"press","args":{"combo":"lopt+ropt"}}]'
 soak 31-soak-rcmd+a press rcmd+a
 soak 32-soak-lcmd+rcmd press lcmd+rcmd
+printf '%s\n' "33-latency" > /tmp/scenario.txt
+sleep 0.6
+python3 - "$BASE" "$FIX" <<'PY' | tee "$OUT/latency.txt"
+import subprocess, sys, time, statistics
+base, fix = sys.argv[1], sys.argv[2]
+cases = [("base", base, ["press", "cmd+a"]), ("fix", fix, ["press", "cmd+a"]),
+         ("base", base, ["press", "a", "--app", "observer"]), ("fix", fix, ["press", "a", "--app", "observer"]),
+         ("fix", fix, ["press", "lcmd+rcmd"]), ("fix", fix, ["press", "lcmd+rcmd+a"])]
+for _ in range(2):
+    for label, binary, args in cases:
+        subprocess.run([binary, *args], capture_output=True)
+for label, binary, args in cases:
+    samples = []
+    for _ in range(15):
+        start = time.perf_counter()
+        subprocess.run([binary, *args], capture_output=True)
+        samples.append((time.perf_counter() - start) * 1000)
+        time.sleep(0.05)
+    print(f"LATENCY {label:4} {' '.join(args):28} min {min(samples):6.1f} ms  median {statistics.median(samples):6.1f} ms  max {max(samples):6.1f} ms")
+PY
 kill $OBS
 python3 - "$OUT/observer.log" <<'PY'
 import sys, collections
