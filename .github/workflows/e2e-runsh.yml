@@ -31,11 +31,16 @@ jobs:
           sw_vers
           git log --oneline -1
           rustup show
+      - uses: actions/checkout@v4
+        with:
+          path: harness
       - name: Give the desktop one focused window
         run: |
-          osascript -e 'tell application "TextEdit" to make new document' -e 'tell application "TextEdit" to activate'
-          sleep 2
-          osascript -e 'tell application "System Events" to get name of first application process whose frontmost is true'
+          mkdir -p "$RUNNER_TEMP/out"
+          cd harness/probe413 && swiftc -O observer.swift -o "$RUNNER_TEMP/observer"
+          nohup "$RUNNER_TEMP/observer" "$RUNNER_TEMP/out/observer.log" > /dev/null 2>&1 &
+          sleep 4
+          screencapture -x "$RUNNER_TEMP/out/before.png" || true
       - name: Run tests/e2e/run.sh
         working-directory: repo
         run: |
@@ -46,6 +51,7 @@ jobs:
       - name: Collect
         if: always()
         run: |
+          mkdir -p "$RUNNER_TEMP/out"
           screencapture -x "$RUNNER_TEMP/out/final.png" || true
           for d in /tmp/ad-*; do [ -d "$d" ] && tar -czf "$RUNNER_TEMP/out/$(basename "$d").tgz" -C /tmp "$(basename "$d")" --exclude='*.app' --exclude='bin' || true; done
           ls -la "$RUNNER_TEMP/out"
