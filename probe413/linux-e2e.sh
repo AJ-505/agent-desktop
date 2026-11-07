@@ -38,3 +38,4 @@ kill $XEV
 grep -E "KeyPress|KeyRelease|keysym" "$OUT/xev.log" | grep -oE "(KeyPress|KeyRelease)|keysym 0x[0-9a-f]+, [A-Za-z_]+" | paste - - > "$OUT/xev-keys.log"
 cat "$OUT/xev-keys.log"
 xmodmap -pke | grep -E "Super|Alt" | head
+# final
