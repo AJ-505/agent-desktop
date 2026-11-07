@@ -50,4 +50,30 @@ scenario 25-fix-batch-lopt+ropt "$FIX" batch '[{"command":"press","args":{"combo
 scenario 26-fix-cmd+lcmd+a "$FIX" press cmd+lcmd+a
 scenario 27-fix-headed-app-rcmd+a "$FIX" --headed press rcmd+a --app observer
 scenario 28-fix-headed-app-lcmd+rcmd "$FIX" --headed press lcmd+rcmd --app observer
+soak() {
+  local name=$1
+  local bin=$FIX
+  shift
+  if [ "$1" = "--prev" ]; then bin=$PREV; shift; fi
+  printf '%s\n' "$name" > /tmp/scenario.txt
+  sleep 0.6
+  for i in $(seq 1 30); do "$bin" "$@" > /dev/null; sleep 0.15; done
+  sleep 0.5
+  screencapture -x "$OUT/shots/$name.png"
+}
+soak 29-soak-prev-unspaced-lcmd+rcmd+a --prev press lcmd+rcmd+a
+soak 29-soak-lcmd+rcmd+a press lcmd+rcmd+a
+soak 30-soak-batch-lopt+ropt batch '[{"command":"press","args":{"combo":"lopt+ropt"}}]'
+soak 31-soak-rcmd+a press rcmd+a
+soak 32-soak-lcmd+rcmd press lcmd+rcmd
 kill $OBS
+python3 - "$OUT/observer.log" <<'PY'
+import sys, collections
+mode=None; counts=collections.defaultdict(collections.Counter)
+for line in open(sys.argv[1]):
+    if line.startswith("SCENARIO "): mode=line.split()[1]; continue
+    if mode and mode.split("-")[1]=="soak" and "local " in line:
+        kind=line.split()[1]; kc=line.split("keyCode=")[1].split()[0]; fl=line.split("flags=")[1].split()[0]
+        counts[mode][f"{kind}:{kc}:{fl}"]+=1
+for m,c in counts.items(): print("SOAK", m, dict(c), "(30 presses; every event must appear 30 times)")
+PY

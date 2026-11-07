@@ -23,6 +23,11 @@ jobs:
           repository: AJ-505/agent-desktop
           ref: fix/413-sided-modifiers
           path: fix
+      - uses: actions/checkout@v4
+        with:
+          repository: AJ-505/agent-desktop
+          ref: ee59c4ad
+          path: prev
       - name: Build base and fix binaries
         run: |
           sw_vers
@@ -30,6 +35,7 @@ jobs:
           (cd fix && git log --oneline -1 && cargo build --release --locked -p agent-desktop) && cp fix/target/release/agent-desktop agent-desktop-fix
           ls -la agent-desktop-base agent-desktop-fix
           ! cmp -s agent-desktop-base agent-desktop-fix
+          (cd prev && cargo build --release --locked -p agent-desktop) && cp prev/target/release/agent-desktop agent-desktop-prev
       - name: Build observer
         run: |
           cd harness/probe413
@@ -38,7 +44,7 @@ jobs:
       - name: Run E2E scenarios
         run: |
           cd harness/probe413
-          ./e2e.sh "$GITHUB_WORKSPACE/agent-desktop-base" "$GITHUB_WORKSPACE/agent-desktop-fix" "$GITHUB_WORKSPACE/out"
+          PREV="$GITHUB_WORKSPACE/agent-desktop-prev" ./e2e.sh "$GITHUB_WORKSPACE/agent-desktop-base" "$GITHUB_WORKSPACE/agent-desktop-fix" "$GITHUB_WORKSPACE/out"
           echo "===== observer log"
           cat "$GITHUB_WORKSPACE/out/observer.log"
       - uses: actions/upload-artifact@v4
