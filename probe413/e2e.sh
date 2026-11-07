@@ -50,6 +50,9 @@ scenario 25-fix-batch-lopt+ropt "$FIX" batch '[{"command":"press","args":{"combo
 scenario 26-fix-cmd+lcmd+a "$FIX" press cmd+lcmd+a
 scenario 27-fix-headed-app-rcmd+a "$FIX" --headed press rcmd+a --app observer
 scenario 28-fix-headed-app-lcmd+rcmd "$FIX" --headed press lcmd+rcmd --app observer
+scenario 28b-fix-shift+lcmd "$FIX" press shift+lcmd
+scenario 28c-fix-shift+lcmd+rcmd+a "$FIX" press shift+lcmd+rcmd+a
+scenario 28d-fix-lcmd+lcmd+lcmd+a-dedupe "$FIX" press lcmd+lcmd+lcmd+a
 soak() {
   local name=$1
   local bin=$FIX
@@ -71,8 +74,9 @@ python3 - "$OUT/observer.log" <<'PY'
 import sys, collections
 mode=None; counts=collections.defaultdict(collections.Counter)
 for line in open(sys.argv[1]):
-    if line.startswith("SCENARIO "): mode=line.split()[1]; continue
-    if mode and mode.split("-")[1]=="soak" and "local " in line:
+    if line.startswith("SCENARIO"):
+        parts=line.split(); mode=parts[1] if len(parts)>1 else None; continue
+    if mode and "soak" in mode and "local " in line:
         kind=line.split()[1]; kc=line.split("keyCode=")[1].split()[0]; fl=line.split("flags=")[1].split()[0]
         counts[mode][f"{kind}:{kc}:{fl}"]+=1
 for m,c in counts.items(): print("SOAK", m, dict(c), "(30 presses; every event must appear 30 times)")
