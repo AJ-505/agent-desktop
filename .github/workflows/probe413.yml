@@ -9,8 +9,6 @@ jobs:
   e2e:
     runs-on: macos-latest
     timeout-minutes: 60
-    env:
-      CARGO_TARGET_DIR: ${{ github.workspace }}/target
     steps:
       - uses: actions/checkout@v4
         with:
@@ -28,9 +26,10 @@ jobs:
       - name: Build base and fix binaries
         run: |
           sw_vers
-          (cd base && cargo build --release --locked -p agent-desktop) && cp target/release/agent-desktop agent-desktop-base
-          (cd fix && git log --oneline -1 && cargo build --release --locked -p agent-desktop) && cp target/release/agent-desktop agent-desktop-fix
+          (cd base && cargo build --release --locked -p agent-desktop) && cp base/target/release/agent-desktop agent-desktop-base
+          (cd fix && git log --oneline -1 && cargo build --release --locked -p agent-desktop) && cp fix/target/release/agent-desktop agent-desktop-fix
           ls -la agent-desktop-base agent-desktop-fix
+          ! cmp -s agent-desktop-base agent-desktop-fix
       - name: Build observer
         run: |
           cd harness/probe413

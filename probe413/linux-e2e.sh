@@ -15,12 +15,15 @@ sleep 0.5
 run() {
   local name=$1 bin=$2
   shift 2
-  echo "MARK $name" >> "$OUT/marks.log"
+  local before
+  before=$(wc -l < "$OUT/xev.log")
   printf '=== %s :: %s %s\n' "$name" "$(basename "$bin")" "$*"
   "$bin" "$@"
   echo "exit=$?"
   sleep 0.7
-  echo "xev lines so far: $(wc -l < "$OUT/xev.log")"
+  echo "--- X11 key events seen by xev:"
+  tail -n +"$((before + 1))" "$OUT/xev.log" | grep -oE "^(KeyPress|KeyRelease)|keysym 0x[0-9a-f]+, [A-Za-z_0-9]+" | paste - - | sed 's/^/    /'
+  echo "--- end"
 }
 run L01-base-lcmd+a "$BASE" press lcmd+a
 run L02-fix-lcmd+a "$FIX" press lcmd+a

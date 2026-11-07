@@ -9,8 +9,6 @@ jobs:
   linux:
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    env:
-      CARGO_TARGET_DIR: ${{ github.workspace }}/target
     steps:
       - uses: actions/checkout@v4
         with:
@@ -31,8 +29,9 @@ jobs:
           sudo apt-get install -y --no-install-recommends at-spi2-core dbus-x11 xvfb x11-utils xdotool openbox x11-xserver-utils
       - name: Build base and fix binaries
         run: |
-          (cd base && cargo build --release --locked -p agent-desktop) && cp target/release/agent-desktop agent-desktop-base
-          (cd fix && cargo build --release --locked -p agent-desktop) && cp target/release/agent-desktop agent-desktop-fix
+          (cd base && cargo build --release --locked -p agent-desktop) && cp base/target/release/agent-desktop agent-desktop-base
+          (cd fix && cargo build --release --locked -p agent-desktop) && cp fix/target/release/agent-desktop agent-desktop-fix
+          ! cmp -s agent-desktop-base agent-desktop-fix
       - name: Run Linux X11 scenarios
         run: |
           dbus-run-session -- xvfb-run -a -s "-screen 0 1280x800x24" harness/probe413/linux-e2e.sh "$GITHUB_WORKSPACE/agent-desktop-base" "$GITHUB_WORKSPACE/agent-desktop-fix" "$GITHUB_WORKSPACE/out"

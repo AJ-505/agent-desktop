@@ -47,4 +47,7 @@ scenario 22-base-app-a "$BASE" press a --app observer
 scenario 23-fix-app-a "$FIX" press a --app observer
 scenario 24-fix-app-rcmd+a "$FIX" press rcmd+a --app observer
 scenario 25-fix-batch-lopt+ropt "$FIX" batch '[{"command":"press","args":{"combo":"lopt+ropt"}}]'
+scenario 26-fix-cmd+lcmd+a "$FIX" press cmd+lcmd+a
+scenario 27-fix-headed-app-rcmd+a "$FIX" --headed press rcmd+a --app observer
+scenario 28-fix-headed-app-lcmd+rcmd "$FIX" --headed press lcmd+rcmd --app observer
 kill $OBS
