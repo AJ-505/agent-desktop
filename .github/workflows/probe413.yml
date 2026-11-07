@@ -1,0 +1,40 @@
+name: probe413
+on:
+  push:
+    branches: [probe/413]
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: macos-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Environment
+        run: |
+          sw_vers; uname -m
+          sudo sqlite3 "/Library/Application Support/com.apple.TCC/TCC.db" "select service,client,auth_value from access" 2>&1 | head -60 || true
+      - name: Build probes
+        run: |
+          cd probe413
+          swiftc -O observer.swift -o observer
+          swiftc -O poster.swift -o poster
+      - name: Run probes
+        run: |
+          cd probe413
+          mkdir -p out
+          ./observer out/observer.log &
+          sleep 4
+          cat out/observer.log
+          OPID=$(pgrep -x observer)
+          echo "== explicit HID"; ./poster explicit; sleep 1
+          echo "== implicit HID"; ./poster implicit; sleep 1
+          echo "== explicit pid"; ./poster explicit $OPID; sleep 1
+          echo "== implicit pid"; ./poster implicit $OPID; sleep 1
+          screencapture -x out/screen.png || echo "screencapture failed"
+          echo "== observer log"; cat out/observer.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: probe413
+          path: probe413/out
