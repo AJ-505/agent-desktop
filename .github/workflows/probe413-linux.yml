@@ -1,0 +1,43 @@
+name: probe413-linux
+on:
+  push:
+    branches: [probe/413]
+    paths: ['.github/workflows/probe413-linux.yml', 'probe413/linux-e2e.sh']
+permissions:
+  contents: read
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      CARGO_TARGET_DIR: ${{ github.workspace }}/target
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: harness
+      - uses: actions/checkout@v4
+        with:
+          repository: AJ-505/agent-desktop
+          ref: b43ac4f6e892ef608f8851428613c4009f0e84c7
+          path: base
+      - uses: actions/checkout@v4
+        with:
+          repository: AJ-505/agent-desktop
+          ref: fix/413-sided-modifiers
+          path: fix
+      - name: Install X11 tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends at-spi2-core dbus-x11 xvfb x11-utils xdotool openbox x11-xserver-utils
+      - name: Build base and fix binaries
+        run: |
+          (cd base && cargo build --release --locked -p agent-desktop) && cp target/release/agent-desktop agent-desktop-base
+          (cd fix && cargo build --release --locked -p agent-desktop) && cp target/release/agent-desktop agent-desktop-fix
+      - name: Run Linux X11 scenarios
+        run: |
+          dbus-run-session -- xvfb-run -a -s "-screen 0 1280x800x24" harness/probe413/linux-e2e.sh "$GITHUB_WORKSPACE/agent-desktop-base" "$GITHUB_WORKSPACE/agent-desktop-fix" "$GITHUB_WORKSPACE/out"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: linux413
+          path: out

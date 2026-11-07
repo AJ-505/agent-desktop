@@ -2,6 +2,7 @@ name: probe413
 on:
   push:
     branches: [probe/413]
+    paths: ['.github/workflows/probe413.yml', 'probe413/observer.swift', 'probe413/poster.swift', 'probe413/e2e.sh']
 permissions:
   contents: read
 jobs:
