@@ -2,6 +2,7 @@ import AppKit
 
 let logPath = CommandLine.arguments.count > 1 ? CommandLine.arguments[1] : "/tmp/observer.log"
 FileManager.default.createFile(atPath: logPath, contents: nil)
+let scenarioPath = "/tmp/scenario.txt"
 let logHandle = FileHandle(forWritingAtPath: logPath)!
 
 func typeName(_ t: NSEvent.EventType) -> String {
@@ -30,8 +31,15 @@ final class Observer: NSObject, NSApplicationDelegate {
         history = NSTextField(wrappingLabelWithString: "")
         history.font = .monospacedSystemFont(ofSize: 15, weight: .regular)
         history.frame = NSRect(x: 20, y: 20, width: 1060, height: 530)
+        let field = NSTextField(string: "")
+        field.frame = NSRect(x: 20, y: 520, width: 400, height: 28)
+        field.placeholderString = "focused text field"
+        history.frame = NSRect(x: 20, y: 20, width: 1060, height: 490)
         window.contentView!.addSubview(status)
         window.contentView!.addSubview(history)
+        window.contentView!.addSubview(field)
+        window.makeFirstResponder(field)
+        Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in self.pollScenario() }
         window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
         let mask: NSEvent.EventTypeMask = [.flagsChanged, .keyDown, .keyUp]
@@ -42,6 +50,19 @@ final class Observer: NSObject, NSApplicationDelegate {
             self.record(event, via: "global")
         }
         log("READY pid=\(ProcessInfo.processInfo.processIdentifier) trusted=\(AXIsProcessTrusted())")
+    }
+
+    var scenario = ""
+    func pollScenario() {
+        guard let next = try? String(contentsOfFile: scenarioPath, encoding: .utf8),
+              next != scenario else { return }
+        scenario = next
+        lines = []
+        chordsSeen = []
+        history.stringValue = ""
+        window.title = "Scenario: " + next.trimmingCharacters(in: .whitespacesAndNewlines)
+        status.stringValue = "Waiting for modifier events"
+        log("SCENARIO " + next.trimmingCharacters(in: .whitespacesAndNewlines))
     }
 
     func record(_ event: NSEvent, via: String) {

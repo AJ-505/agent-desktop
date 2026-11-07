@@ -5,36 +5,44 @@ on:
 permissions:
   contents: read
 jobs:
-  probe:
+  e2e:
     runs-on: macos-latest
-    timeout-minutes: 15
+    timeout-minutes: 60
+    env:
+      CARGO_TARGET_DIR: ${{ github.workspace }}/target
     steps:
       - uses: actions/checkout@v4
-      - name: Environment
+        with:
+          path: harness
+      - uses: actions/checkout@v4
+        with:
+          repository: AJ-505/agent-desktop
+          ref: b43ac4f6e892ef608f8851428613c4009f0e84c7
+          path: base
+      - uses: actions/checkout@v4
+        with:
+          repository: AJ-505/agent-desktop
+          ref: fix/413-sided-modifiers
+          path: fix
+      - name: Build base and fix binaries
         run: |
-          sw_vers; uname -m
-          sudo sqlite3 "/Library/Application Support/com.apple.TCC/TCC.db" "select service,client,auth_value from access" 2>&1 | head -60 || true
-      - name: Build probes
+          sw_vers
+          (cd base && cargo build --release --locked -p agent-desktop) && cp target/release/agent-desktop agent-desktop-base
+          (cd fix && git log --oneline -1 && cargo build --release --locked -p agent-desktop) && cp target/release/agent-desktop agent-desktop-fix
+          ls -la agent-desktop-base agent-desktop-fix
+      - name: Build observer
         run: |
-          cd probe413
+          cd harness/probe413
           swiftc -O observer.swift -o observer
           swiftc -O poster.swift -o poster
-      - name: Run probes
+      - name: Run E2E scenarios
         run: |
-          cd probe413
-          mkdir -p out
-          ./observer out/observer.log &
-          sleep 4
-          cat out/observer.log
-          OPID=$(pgrep -x observer)
-          echo "== explicit HID"; ./poster explicit; sleep 1
-          echo "== implicit HID"; ./poster implicit; sleep 1
-          echo "== explicit pid"; ./poster explicit $OPID; sleep 1
-          echo "== implicit pid"; ./poster implicit $OPID; sleep 1
-          screencapture -x out/screen.png || echo "screencapture failed"
-          echo "== observer log"; cat out/observer.log
+          cd harness/probe413
+          ./e2e.sh "$GITHUB_WORKSPACE/agent-desktop-base" "$GITHUB_WORKSPACE/agent-desktop-fix" "$GITHUB_WORKSPACE/out"
+          echo "===== observer log"
+          cat "$GITHUB_WORKSPACE/out/observer.log"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: probe413
-          path: probe413/out
+          name: e2e413
+          path: out

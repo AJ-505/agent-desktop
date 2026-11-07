@@ -30,6 +30,9 @@ case "implicit":
     post(key(54, true, cmd | 0x18, flagsChanged: false))
     post(key(54, false, cmd | 0x08, flagsChanged: false))
     post(key(55, false, 0, flagsChanged: false))
+case "state":
+    print(String(format: "hidSystemState flags=0x%llx", CGEventSource.flagsState(.hidSystemState).rawValue))
+    print(String(format: "combinedSessionState flags=0x%llx", CGEventSource.flagsState(.combinedSessionState).rawValue))
 default:
     print("unknown mode")
 }
