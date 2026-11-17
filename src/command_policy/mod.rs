@@ -19,12 +19,14 @@ pub(crate) fn policy_for(cmd: &Commands) -> PermissionNeed {
         | Commands::Skills(_)
         | Commands::Session(_)
         | Commands::CursorOverlay(_)
+        | Commands::Sandbox(_)
         | Commands::Trace(_) => None,
         Commands::Status | Commands::Permissions(_) => None,
         Commands::ListWindows(_) | Commands::ListDisplays | Commands::ListApps(_) => None,
         Commands::ClipboardGet(_) | Commands::ClipboardSet(_) | Commands::ClipboardClear => None,
         Commands::Batch(_) => None,
 
+        Commands::Wait(args) if args.mode.ms.is_some() => None,
         Commands::Snapshot(_)
         | Commands::Find(_)
         | Commands::ListSurfaces(_)
@@ -248,6 +250,7 @@ fn validate_args(cmd: &Commands) -> Result<(), AppError> {
         | Commands::Skills(_)
         | Commands::Session(_)
         | Commands::CursorOverlay(_)
+        | Commands::Sandbox(_)
         | Commands::Trace(_) => {}
     }
     Ok(())
